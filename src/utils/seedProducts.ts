@@ -10,6 +10,7 @@ export const seedProducts = async (): Promise<void> => {
   const defaultProducts = [
     {
       name: 'First Class Bricks',
+      slug: 'first-class-bricks',
       type: 'Avval',
       pricePer1000: 4500,
       pricePerTrolley: 13500,
@@ -17,6 +18,7 @@ export const seedProducts = async (): Promise<void> => {
     },
     {
       name: 'Second Class Bricks',
+      slug: 'second-class-bricks',
       type: 'Second Class',
       pricePer1000: 3500,
       pricePerTrolley: 10500,
@@ -24,6 +26,7 @@ export const seedProducts = async (): Promise<void> => {
     },
     {
       name: 'Brick Bats',
+      slug: 'brick-bats',
       type: 'Rora',
       pricePer1000: 2500,
       pricePerTrolley: 7500,
