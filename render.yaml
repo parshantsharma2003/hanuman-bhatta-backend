@@ -1,0 +1,42 @@
+services:
+  - type: web
+    name: hanuman-bhatta-backend
+    runtime: node
+    rootDir: the-backend
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: API_VERSION
+        value: v1
+      - key: MONGODB_URI
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: 12h
+      - key: AUTH_COOKIE_NAME
+        value: hb_admin_token
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ADMIN_NAME
+        value: Hanuman Bhatta Admin
+      - key: WHATSAPP_NUMBER
+        sync: false
+      - key: CONTACT_EMAIL
+        sync: false
+      - key: CONTACT_PHONE
+        sync: false
+      - key: BRICKS_PER_TROLLEY
+        value: 3000
+      - key: WASTAGE_PERCENTAGE
+        value: 5
