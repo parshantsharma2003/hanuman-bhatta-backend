@@ -39,8 +39,6 @@ const AnalyticsSchema = new Schema<AnalyticsDocument>(
   }
 );
 
-AnalyticsSchema.index({ metricType: 1 }, { unique: true });
-
 export const Analytics = models.Analytics || model<AnalyticsDocument>('Analytics', AnalyticsSchema);
 
 export default Analytics;

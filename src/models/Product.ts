@@ -104,7 +104,6 @@ const ProductSchema = new Schema<ProductDocument>(
 );
 
 // Add indexes for better query performance
-ProductSchema.index({ slug: 1 }, { unique: true });
 ProductSchema.index({ name: 1 });
 ProductSchema.index({ isActive: 1 });
 ProductSchema.index({ isArchived: 1 });

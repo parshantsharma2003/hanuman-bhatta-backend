@@ -1,4 +1,5 @@
-import express, { Application, Request, Response, NextFunction } from 'express';
+import 'express-async-errors';
+import express, { Application, Request, Response } from 'express';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import compression from 'compression';
@@ -48,35 +49,6 @@ app.use(cookieParser());
 // ===================================
 // Compress response bodies for all requests
 app.use(compression());
-
-// ===================================
-// RESPONSE TIME TRACKING
-// ===================================
-app.use((_req: Request, res: Response, next: NextFunction) => {
-  const start = Date.now();
-  
-  // Capture the original res.end and res.json methods
-  const originalEnd = res.end;
-  const originalJson = res.json;
-  
-  // Wrap res.end to add response time header before sending
-  res.end = function(this: Response, ...args: any[]) {
-    const duration = Date.now() - start;
-    if (!res.headersSent) {
-      res.setHeader('X-Response-Time', `${duration}ms`);
-    }
-    return originalEnd.apply(this, args as any);
-  };
-  
-  // Wrap res.json to add response time header before sending
-  res.json = function(body: any) {
-    const duration = Date.now() - start;
-    res.setHeader('X-Response-Time', `${duration}ms`);
-    return originalJson.call(res, body);
-  };
-  
-  next();
-});
 
 // ===================================
 // API ROUTES

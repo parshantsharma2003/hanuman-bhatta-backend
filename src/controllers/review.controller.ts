@@ -3,6 +3,10 @@ import { Review } from '../models';
 
 const reviewClients = new Set<Response>();
 
+const isClientWritable = (client: Response): boolean => {
+  return !client.writableEnded && !client.destroyed;
+};
+
 const approvedFilter = {
   $or: [{ status: 'approved' }, { status: { $exists: false }, isApproved: true }],
 };
@@ -52,8 +56,17 @@ const broadcastReviewUpdate = async (eventType: 'review_updated' | 'review_delet
   });
 
   reviewClients.forEach((client) => {
-    client.write(`event: ${eventType}\n`);
-    client.write(`data: ${payload}\n\n`);
+    if (!isClientWritable(client)) {
+      reviewClients.delete(client);
+      return;
+    }
+
+    try {
+      client.write(`event: ${eventType}\n`);
+      client.write(`data: ${payload}\n\n`);
+    } catch {
+      reviewClients.delete(client);
+    }
   });
 };
 
@@ -146,18 +159,34 @@ export const reviewController = {
     res.setHeader('Cache-Control', 'no-cache, no-transform');
     res.setHeader('Connection', 'keep-alive');
 
-    if (typeof (res as any).flushHeaders === 'function') {
-      (res as any).flushHeaders();
+    if (typeof res.flushHeaders === 'function') {
+      res.flushHeaders();
     }
 
     reviewClients.add(res);
 
     const summary = await getSummary();
-    res.write(`event: connected\n`);
-    res.write(`data: ${JSON.stringify({ summary, timestamp: new Date().toISOString() })}\n\n`);
+    try {
+      res.write('event: connected\n');
+      res.write(`data: ${JSON.stringify({ summary, timestamp: new Date().toISOString() })}\n\n`);
+    } catch {
+      reviewClients.delete(res);
+      return;
+    }
 
     const heartbeat = setInterval(() => {
-      res.write(': ping\n\n');
+      if (!isClientWritable(res)) {
+        clearInterval(heartbeat);
+        reviewClients.delete(res);
+        return;
+      }
+
+      try {
+        res.write(': ping\n\n');
+      } catch {
+        clearInterval(heartbeat);
+        reviewClients.delete(res);
+      }
     }, 25000);
 
     res.on('close', () => {

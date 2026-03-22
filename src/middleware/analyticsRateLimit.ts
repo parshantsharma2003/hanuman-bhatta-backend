@@ -5,6 +5,18 @@ const MAX_REQUESTS = 120;
 
 const ipBuckets = new Map<string, { count: number; windowStart: number }>();
 
+const CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
+const cleanupTimer = setInterval(() => {
+  const now = Date.now();
+  for (const [ip, bucket] of ipBuckets.entries()) {
+    if (now - bucket.windowStart > WINDOW_MS) {
+      ipBuckets.delete(ip);
+    }
+  }
+}, CLEANUP_INTERVAL_MS);
+
+cleanupTimer.unref();
+
 export const analyticsRateLimit = (req: Request, res: Response, next: NextFunction) => {
   const ip = (req.ip || req.socket.remoteAddress || 'unknown').toString();
   const now = Date.now();

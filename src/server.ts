@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import app from './app';
 import { env, isDevelopment } from './config/env';
 import { connectDatabase } from './config/database';
@@ -6,10 +7,7 @@ import { ensureInventory } from './utils/seedInventory';
 import { seedProducts } from './utils/seedProducts';
 import { verifyStartup } from './utils/verifyStartup';
 
-// ✅ FIXED: Strict number type for PORT
-const PORT: number = process.env.PORT
-  ? parseInt(process.env.PORT, 10)
-  : env.port || 5000;
+const PORT: number = env.port;
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (error: Error) => {
@@ -32,8 +30,7 @@ const startServer = async () => {
   console.log('\n🔍 Verifying startup requirements...');
   await verifyStartup();
 
-  // ✅ FIXED: Bind to Railway port correctly
-  server = app.listen(PORT, "0.0.0.0", () => {
+  server = app.listen(PORT, '0.0.0.0', () => {
     console.log('\n🚀 Server started successfully!\n');
     console.log('┌─────────────────────────────────────────────┐');
     console.log('│  Hanuman Bhatta API Server                  │');
@@ -62,13 +59,17 @@ startServer().catch((error) => {
 });
 
 // Handle unhandled promise rejections
-process.on('unhandledRejection', (reason: any) => {
+process.on('unhandledRejection', (reason: unknown) => {
   console.error('UNHANDLED REJECTION! 💥 Shutting down...');
   console.error('Reason:', reason);
 
   if (server) {
-    server.close(() => {
-      process.exit(1);
+    server.close(async () => {
+      try {
+        await mongoose.connection.close();
+      } finally {
+        process.exit(1);
+      }
     });
   } else {
     process.exit(1);
@@ -80,9 +81,13 @@ process.on('SIGTERM', () => {
   console.log('\n👋 SIGTERM received. Shutting down gracefully...');
 
   if (server) {
-    server.close(() => {
+    server.close(async () => {
+      await mongoose.connection.close();
       console.log('✅ Process terminated!\n');
+      process.exit(0);
     });
+  } else {
+    process.exit(0);
   }
 });
 

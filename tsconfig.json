@@ -2,7 +2,9 @@
   "compilerOptions": {
     "target": "ES2020",
     "module": "commonjs",
+
     "lib": ["ES2020"],
+    "types": ["node"],
 
     "outDir": "./dist",
     "rootDir": "./src",
@@ -18,7 +20,10 @@
     "allowSyntheticDefaultImports": true,
 
     "sourceMap": true,
-    "removeComments": true
+    "removeComments": true,
+
+    // ✅ ADD THIS (important for stability)
+    "noImplicitAny": false
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

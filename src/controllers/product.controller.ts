@@ -499,12 +499,24 @@ export const productStream = (req: Request, res: Response) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
-  res.setHeader('Access-Control-Allow-Origin', '*');
 
-  res.write('data: {"type":"connected"}\n\n');
+  try {
+    res.write('data: {"type":"connected"}\n\n');
+  } catch {
+    return;
+  }
 
   const heartbeat = setInterval(() => {
-    res.write('data: {"type":"heartbeat"}\n\n');
+    if (res.writableEnded || res.destroyed) {
+      clearInterval(heartbeat);
+      return;
+    }
+
+    try {
+      res.write('data: {"type":"heartbeat"}\n\n');
+    } catch {
+      clearInterval(heartbeat);
+    }
   }, 30000);
 
   req.on('close', () => {

@@ -174,14 +174,26 @@ export const galleryStream = (req: Request, res: Response) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
-  res.setHeader('Access-Control-Allow-Origin', '*');
 
   // Send initial connection message
-  res.write('data: {"type":"connected"}\n\n');
+  try {
+    res.write('data: {"type":"connected"}\n\n');
+  } catch {
+    return;
+  }
 
   // Keep connection alive with heartbeat
   const heartbeat = setInterval(() => {
-    res.write('data: {"type":"heartbeat"}\n\n');
+    if (res.writableEnded || res.destroyed) {
+      clearInterval(heartbeat);
+      return;
+    }
+
+    try {
+      res.write('data: {"type":"heartbeat"}\n\n');
+    } catch {
+      clearInterval(heartbeat);
+    }
   }, 30000);
 
   // Clean up on client disconnect

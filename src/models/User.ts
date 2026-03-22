@@ -58,7 +58,6 @@ const UserSchema = new Schema<UserDocument>(
 );
 
 // Add index for efficient email lookups
-UserSchema.index({ email: 1 });
 UserSchema.index({ role: 1, isActive: 1 });
 
 UserSchema.pre('save', async function (next) {

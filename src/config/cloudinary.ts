@@ -1,4 +1,4 @@
-import { v2 as cloudinary } from 'cloudinary';
+import { UploadApiErrorResponse, v2 as cloudinary } from 'cloudinary';
 import { env } from './env';
 
 // Check if Cloudinary is configured
@@ -28,7 +28,7 @@ cloudinary.config({
 export default cloudinary;
 
 // Upload image to Cloudinary
-export const uploadImage = async (file: any) => {
+export const uploadImage = async (file: string) => {
   if (!isCloudinaryConfigured) {
     throw new Error(
       'Cloudinary is not configured. Please add your Cloudinary credentials to the .env file. ' +
@@ -49,14 +49,15 @@ export const uploadImage = async (file: any) => {
       mediaUrl: result.secure_url,
       publicId: result.public_id,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Cloudinary upload error:', error);
-    throw new Error(`Failed to upload image: ${error.message || 'Unknown error'}`);
+    const typedError = error as UploadApiErrorResponse;
+    throw new Error(`Failed to upload image: ${typedError?.message || 'Unknown error'}`);
   }
 };
 
 // Upload video to Cloudinary
-export const uploadVideo = async (file: any) => {
+export const uploadVideo = async (file: string) => {
   if (!isCloudinaryConfigured) {
     throw new Error(
       'Cloudinary is not configured. Please add your Cloudinary credentials to the .env file. ' +
@@ -77,9 +78,10 @@ export const uploadVideo = async (file: any) => {
       mediaUrl: result.secure_url,
       publicId: result.public_id,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Cloudinary upload error:', error);
-    throw new Error(`Failed to upload video: ${error.message || 'Unknown error'}`);
+    const typedError = error as UploadApiErrorResponse;
+    throw new Error(`Failed to upload video: ${typedError?.message || 'Unknown error'}`);
   }
 };
 
