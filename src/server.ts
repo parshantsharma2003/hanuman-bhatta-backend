@@ -6,7 +6,10 @@ import { ensureInventory } from './utils/seedInventory';
 import { seedProducts } from './utils/seedProducts';
 import { verifyStartup } from './utils/verifyStartup';
 
-const PORT = env.port;
+// ✅ FIXED: Strict number type for PORT
+const PORT: number = process.env.PORT
+  ? parseInt(process.env.PORT, 10)
+  : env.port || 5000;
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (error: Error) => {
@@ -20,6 +23,7 @@ let server: ReturnType<typeof app.listen>;
 
 const startServer = async () => {
   await connectDatabase();
+
   console.log('\n📋 Initializing required data...');
   await ensureAdminUser();
   await ensureInventory();
@@ -28,20 +32,24 @@ const startServer = async () => {
   console.log('\n🔍 Verifying startup requirements...');
   await verifyStartup();
 
-  server = app.listen(PORT, () => {
+  // ✅ FIXED: Bind to Railway port correctly
+  server = app.listen(PORT, "0.0.0.0", () => {
     console.log('\n🚀 Server started successfully!\n');
     console.log('┌─────────────────────────────────────────────┐');
     console.log('│  Hanuman Bhatta API Server                  │');
     console.log('└─────────────────────────────────────────────┘\n');
+
     console.log(`📍 Environment:     ${env.nodeEnv}`);
-    console.log(`🌐 Server URL:      http://localhost:${PORT}`);
-    console.log(`🔗 API Endpoint:    http://localhost:${PORT}/api/${env.apiVersion}`);
-    console.log(`❤️  Health Check:    http://localhost:${PORT}/api/${env.apiVersion}/health`);
-    console.log(`🏓 Ping Endpoint:   http://localhost:${PORT}/api/${env.apiVersion}/health/ping`);
-    console.log(`🔐 Admin Login:     http://localhost:${PORT}/api/${env.apiVersion}/auth/login`);
+    console.log(`🌐 Local URL:       http://localhost:${PORT}`);
+    console.log(`🌍 Public URL:      ${process.env.RAILWAY_STATIC_URL || 'Check Railway dashboard'}`);
+    console.log(`🔗 API Endpoint:    /api/${env.apiVersion}`);
+    console.log(`❤️  Health Check:    /api/${env.apiVersion}/health`);
+    console.log(`🏓 Ping Endpoint:   /api/${env.apiVersion}/health/ping`);
+    console.log(`🔐 Admin Login:     /api/${env.apiVersion}/auth/login`);
+
     console.log(`\n🔧 CORS Origin:     ${env.corsOrigin}`);
     console.log(`\n⏰ Started at:      ${new Date().toLocaleString()}\n`);
-    
+
     if (isDevelopment) {
       console.log('💡 Development mode - detailed logging enabled\n');
     }
@@ -49,16 +57,15 @@ const startServer = async () => {
 };
 
 startServer().catch((error) => {
-  console.error('Failed to start server:', error);
+  console.error('❌ Failed to start server:', error);
   process.exit(1);
 });
 
 // Handle unhandled promise rejections
-process.on('unhandledRejection', (reason: Error) => {
+process.on('unhandledRejection', (reason: any) => {
   console.error('UNHANDLED REJECTION! 💥 Shutting down...');
-  console.error('Reason:', reason.name, reason.message);
-  console.error('Stack:', reason.stack);
-  
+  console.error('Reason:', reason);
+
   if (server) {
     server.close(() => {
       process.exit(1);
@@ -79,5 +86,5 @@ process.on('SIGTERM', () => {
   }
 });
 
-// Export for testing purposes
+// Export for testing
 export { server };
