@@ -8,11 +8,14 @@ const createToken = (payload: object) => {
   return jwt.sign(payload, env.jwtSecret, { expiresIn: env.jwtExpiresIn } as jwt.SignOptions);
 };
 
+const isProduction = env.nodeEnv === 'production';
+const cookieSameSite = isProduction ? 'none' : 'lax';
+
 const setAuthCookie = (res: Response, token: string) => {
   res.cookie(env.cookieName, token, {
     httpOnly: true,
-    secure: env.nodeEnv === 'production',
-    sameSite: 'lax',
+    secure: isProduction,
+    sameSite: cookieSameSite,
     maxAge: 1000 * 60 * 60 * 12,
   });
 };
@@ -58,8 +61,8 @@ export const loginAdmin = async (req: Request, res: Response, next: NextFunction
 export const logoutAdmin = (_req: Request, res: Response) => {
   res.clearCookie(env.cookieName, {
     httpOnly: true,
-    secure: env.nodeEnv === 'production',
-    sameSite: 'lax',
+    secure: isProduction,
+    sameSite: cookieSameSite,
   });
 
   res.status(200).json({
