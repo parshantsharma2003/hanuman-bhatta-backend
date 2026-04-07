@@ -75,13 +75,10 @@ export const getAdminProfile = async (req: Request, res: Response, next: NextFun
   try {
     const user = req.user;
 
-    if (!user) {
-      throw new AppError('Unauthorized', 401);
-    }
-
     res.status(200).json({
       success: true,
-      data: user,
+      authenticated: !!user,
+      data: user || null,
     });
   } catch (error) {
     next(error);

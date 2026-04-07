@@ -3,7 +3,7 @@ import express, { Application, Request, Response } from 'express';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import compression from 'compression';
-import { corsMiddleware } from './middleware/cors';
+import { corsMiddleware, corsPreflightMiddleware } from './middleware/cors';
 import { loggerMiddleware } from './middleware/logger';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import routes from './routes';
@@ -26,6 +26,7 @@ app.use(helmet());
 // CORS MIDDLEWARE
 // ===================================
 app.use(corsMiddleware);
+app.options('*', corsPreflightMiddleware);
 
 // ===================================
 // LOGGING MIDDLEWARE
