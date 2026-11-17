@@ -1,6 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
 import Order from '../models/Order';
-import Inventory, { InventoryDocument } from '../models/Inventory';
 import { env } from '../config/env';
 import { AppError } from '../middleware/errorHandler';
 
@@ -127,10 +126,6 @@ export const submitSmartOrder = async (req: Request, res: Response, next: NextFu
     const quantityTrolleys = quantityBricks / env.bricksPerTrolley;
     const leadPriority = getLeadPriority(brickType, quantityBricks, urgency);
 
-    const inventory = (await Inventory.findOne().sort({ createdAt: -1 }).lean().exec()) as (InventoryDocument & { _id?: any }) | null;
-    const availableBricks = inventory?.totalBricks || 0;
-    const isStockLimited = quantityBricks > availableBricks;
-
     const priceBand = PRICE_PER_BRICK[brickType as BrickType];
     const estimatedPriceMin = Math.round(quantityBricks * priceBand.min);
     const estimatedPriceMax = Math.round(quantityBricks * priceBand.max);
@@ -180,9 +175,7 @@ export const submitSmartOrder = async (req: Request, res: Response, next: NextFu
         order,
         leadPriority,
         stock: {
-          availableBricks,
           requestedBricks: quantityBricks,
-          limited: isStockLimited,
         },
         estimate: {
           min: estimatedPriceMin,
