@@ -13,7 +13,10 @@ const FALLBACK_BRICK_DATA: Record<
   string,
   { name: string; localName: string; grade: string; pricePerBrick: number; pricePer1000: number }
 > = {
-  // First class mappings
+  // Premium Bricks & First class mappings (Brick Bats changed to Premium Bricks @ ₹9/brick & ₹9000/1000)
+  'Premium Bricks': { name: 'Premium Bricks', localName: 'Premium / अव्वल', grade: 'Grade 1', pricePerBrick: 9.0, pricePer1000: 9000 },
+  'Premium': { name: 'Premium Bricks', localName: 'Premium / अव्वल', grade: 'Grade 1', pricePerBrick: 9.0, pricePer1000: 9000 },
+  'Brick Bats': { name: 'Premium Bricks', localName: 'Premium / अव्वल', grade: 'Grade 1', pricePerBrick: 9.0, pricePer1000: 9000 },
   'First Class Bricks': { name: 'First Class Bricks', localName: 'Awwal / अव्वल', grade: 'Grade 1', pricePerBrick: 9.0, pricePer1000: 9000 },
   'Avval': { name: 'First Class Bricks', localName: 'Awwal / अव्वल', grade: 'Grade 1', pricePerBrick: 9.0, pricePer1000: 9000 },
   'Awwal': { name: 'First Class Bricks', localName: 'Awwal / अव्वल', grade: 'Grade 1', pricePerBrick: 9.0, pricePer1000: 9000 },
@@ -25,11 +28,14 @@ const FALLBACK_BRICK_DATA: Record<
   'Lal Petty': { name: 'Standard Bricks', localName: 'Laal Peti / लाल पेटी', grade: 'Grade 1.5', pricePerBrick: 8.5, pricePer1000: 8500 },
   'Grade 1.5': { name: 'Standard Bricks', localName: 'Laal Peti / लाल पेटी', grade: 'Grade 1.5', pricePerBrick: 8.5, pricePer1000: 8500 },
 
-  // Second class / Duyam mappings
-  'Second Class Bricks': { name: 'Second Class Bricks', localName: 'Duyam / दुयम', grade: 'Grade 2', pricePerBrick: 8.0, pricePer1000: 8000 },
-  'Second': { name: 'Second Class Bricks', localName: 'Duyam / दुयम', grade: 'Grade 2', pricePerBrick: 8.0, pricePer1000: 8000 },
-  'Duyam': { name: 'Second Class Bricks', localName: 'Duyam / दुयम', grade: 'Grade 2', pricePerBrick: 8.0, pricePer1000: 8000 },
-  'Grade 2': { name: 'Second Class Bricks', localName: 'Duyam / दुयम', grade: 'Grade 2', pricePerBrick: 8.0, pricePer1000: 8000 },
+  // Second class / Duyam / 2 Number Eent mappings (rate 8 rupee per brick & 8000 per 1000)
+  'Second Class Bricks': { name: 'Second Class Bricks', localName: 'Duyam / 2 Number Eent / दुयम', grade: 'Grade 2', pricePerBrick: 8.0, pricePer1000: 8000 },
+  'Duyam / 2 Number Eent / दुयम': { name: 'Second Class Bricks', localName: 'Duyam / 2 Number Eent / दुयम', grade: 'Grade 2', pricePerBrick: 8.0, pricePer1000: 8000 },
+  '2 Number Eent': { name: 'Second Class Bricks', localName: 'Duyam / 2 Number Eent / दुयम', grade: 'Grade 2', pricePerBrick: 8.0, pricePer1000: 8000 },
+  '2 Number': { name: 'Second Class Bricks', localName: 'Duyam / 2 Number Eent / दुयम', grade: 'Grade 2', pricePerBrick: 8.0, pricePer1000: 8000 },
+  'Second': { name: 'Second Class Bricks', localName: 'Duyam / 2 Number Eent / दुयम', grade: 'Grade 2', pricePerBrick: 8.0, pricePer1000: 8000 },
+  'Duyam': { name: 'Second Class Bricks', localName: 'Duyam / 2 Number Eent / दुयम', grade: 'Grade 2', pricePerBrick: 8.0, pricePer1000: 8000 },
+  'Grade 2': { name: 'Second Class Bricks', localName: 'Duyam / 2 Number Eent / दुयम', grade: 'Grade 2', pricePerBrick: 8.0, pricePer1000: 8000 },
 
   // Third class / Peela mappings
   'Third Class Bricks': { name: 'Third Class Bricks', localName: 'Peela Eent / पीला', grade: 'Grade 3', pricePerBrick: 7.5, pricePer1000: 7500 },

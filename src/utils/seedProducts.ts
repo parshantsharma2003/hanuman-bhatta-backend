@@ -12,7 +12,7 @@ export const FIVE_STANDARD_BRICK_GRADES = [
     productCode: 'HBC-AWWAL',
     name: 'First Class Bricks',
     localName: 'Awwal / Aaval / अव्वल',
-    alternativeNames: ['Awwal', 'Aaval', 'Grade 1', 'Class 105', 'अव्वल ईंट'],
+    alternativeNames: ['Premium Bricks', 'Awwal', 'Aaval', 'Grade 1', 'Class 105', 'अव्वल ईंट'],
     slug: 'first-class-bricks-awwal',
     grade: 'Grade 1',
     category: 'Premium Quality',
@@ -223,6 +223,41 @@ export const FIVE_STANDARD_BRICK_GRADES = [
 ];
 
 export const seedProducts = async (): Promise<void> => {
+  // 1. Rename any legacy "Brick Bats" to "Premium Bricks" and set rate to 9 rupee per brick and 9000 per 1000 bricks
+  await Product.updateMany(
+    { name: { $regex: /brick\s*bats/i } },
+    {
+      $set: {
+        name: 'Premium Bricks',
+        localName: 'Premium / अव्वल',
+        pricePerBrick: 9.0,
+        pricePer1000: 9000,
+        pricePerTrolley: 27000,
+        isActive: true,
+      },
+    }
+  );
+
+  // 2. Ensure Second Class Bricks has localName 'Duyam / 2 Number Eent / दुयम' and rate 8 rupee per brick and 8000 per 1000 bricks
+  await Product.updateMany(
+    {
+      $or: [
+        { name: { $regex: /second\s*class/i } },
+        { localName: { $regex: /duyam/i } },
+        { productId: 'hbc-grade-2-duyam' },
+      ],
+    },
+    {
+      $set: {
+        name: 'Second Class Bricks',
+        localName: 'Duyam / 2 Number Eent / दुयम',
+        pricePerBrick: 8.0,
+        pricePer1000: 8000,
+        pricePerTrolley: 24000,
+      },
+    }
+  );
+
   // Upsert the five standard brick grades so existing systems upgrade smoothly without losing data
   for (const item of FIVE_STANDARD_BRICK_GRADES) {
     const existing = await Product.findOne({
@@ -250,8 +285,10 @@ export const seedProducts = async (): Promise<void> => {
           soundDescription: item.soundDescription,
           strengthLevel: item.strengthLevel,
           displayOrder: item.displayOrder,
-          // If pricePerBrick is unset, initialize it
-          ...(existing.pricePerBrick ? {} : { pricePerBrick: item.pricePerBrick }),
+          // Always ensure rates are updated to standard requested rates
+          pricePerBrick: item.pricePerBrick,
+          pricePer1000: item.pricePer1000,
+          pricePerTrolley: item.pricePerTrolley,
         },
       });
     } else {
@@ -259,5 +296,60 @@ export const seedProducts = async (): Promise<void> => {
     }
   }
 
-  console.log('✅ Centralized 5-grade brick products verified & synchronized');
+  // Also ensure standalone "Premium Bricks" is present
+  const premiumExisting = await Product.findOne({
+    $or: [
+      { name: 'Premium Bricks' },
+      { slug: 'premium-bricks' },
+      { productId: 'hbc-premium-bricks' },
+    ],
+  });
+  if (!premiumExisting) {
+    await Product.create({
+      productId: 'hbc-premium-bricks',
+      productCode: 'HBC-PREMIUM',
+      name: 'Premium Bricks',
+      localName: 'Premium / अव्वल (Awwal)',
+      alternativeNames: ['Premium Bricks', 'Awwal', 'First Class Bricks', 'Grade 1'],
+      slug: 'premium-bricks',
+      grade: 'Grade 1',
+      category: 'Premium Quality',
+      badge: 'PREMIUM QUALITY',
+      pricePerBrick: 9.0,
+      pricePer1000: 9000,
+      pricePerTrolley: 27000,
+      pricingUnit: 'INR',
+      description:
+        'High-strength premium kiln-fired red clay bricks with 10.5+ N/mm² compressive strength, uniform terracotta color, and metallic ringing sound for load-bearing walls.',
+      characteristics: [
+        'Very hard and strong body.',
+        'Uniform size and weight.',
+        'High-finish sharp edges.',
+        'Produces a clear metallic ringing sound when struck.',
+        'High load-bearing capacity.',
+      ],
+      recommendedApplications: [
+        'Major construction projects.',
+        'House construction.',
+        'Main structural load-bearing walls.',
+        'Foundations and exterior facades.',
+      ],
+      colourDescription: 'Uniform red terracotta with sharp finish',
+      soundDescription: 'Clear metallic ringing sound',
+      strengthLevel: 'Very High (Structural Load-Bearing)',
+      usageTags: ['Major Construction', 'House Construction', 'Main Structural Walls', 'Foundations'],
+      qualityGrade: 'First',
+      imageUrl: '/images/brick-texture.jpg',
+      images: ['/images/brick-texture.jpg'],
+      type: 'Class 105 Premium Structural Masonry',
+      isActive: true,
+      isFeatured: true,
+      displayOrder: 1,
+      availabilityStatus: 'In Stock',
+      availability: true,
+      isArchived: false,
+    });
+  }
+
+  console.log('✅ Centralized brick products verified & synchronized');
 };

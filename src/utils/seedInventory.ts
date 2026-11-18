@@ -26,7 +26,7 @@ const INITIAL_GRADE_INVENTORY = [
   {
     grade: 'Grade 2',
     productName: 'Second Class Bricks',
-    localName: 'Duyam / दुयम',
+    localName: 'Duyam / 2 Number Eent / दुयम',
     availableQuantity: 25000,
     reservedQuantity: 0,
     dispatchedQuantity: 0,
@@ -53,7 +53,7 @@ const INITIAL_GRADE_INVENTORY = [
     reservedQuantity: 0,
     dispatchedQuantity: 0,
     stockStatus: 'In Stock' as const,
-    internalRemarks: 'Hard vitrified bats in south yard',
+    internalRemarks: 'Hard vitrified pieces in south yard',
     lastUpdated: new Date(),
   },
 ];
