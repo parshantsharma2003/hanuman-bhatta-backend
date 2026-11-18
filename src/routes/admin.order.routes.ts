@@ -3,6 +3,7 @@ import { authenticate, authorizeRoles } from '../middleware/auth';
 import {
   deleteAdminOrder,
   getAdminOrders,
+  getAdminOrderById,
   updateAdminOrder,
 } from '../controllers/order.controller';
 
@@ -10,7 +11,9 @@ const router = Router();
 
 router.use(authenticate);
 router.get('/orders', authorizeRoles('super_admin', 'admin'), getAdminOrders);
+router.get('/orders/:id', authorizeRoles('super_admin', 'admin'), getAdminOrderById);
 router.patch('/orders/:id', authorizeRoles('super_admin', 'admin'), updateAdminOrder);
+router.put('/orders/:id', authorizeRoles('super_admin', 'admin'), updateAdminOrder);
 router.delete('/orders/:id', authorizeRoles('super_admin'), deleteAdminOrder);
 
 export default router;

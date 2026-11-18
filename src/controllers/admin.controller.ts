@@ -11,28 +11,33 @@ export const updateProductPricing = async (
 ) => {
   try {
     const { id } = req.params;
-    const { pricePer1000, pricePerTrolley, availability } = req.body || {};
+    const { pricePerBrick, pricePer1000, pricePerTrolley, availability } = req.body || {};
 
     // Validate product ID
     if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
       throw new AppError('Valid product ID is required', 400);
     }
 
-    // Validate pricing fields
-    if (typeof pricePer1000 !== 'number' || pricePer1000 < 0) {
-      throw new AppError('Price per 1000 must be a positive number', 400);
+    const calculatedPricePer1000 =
+      pricePer1000 !== undefined
+        ? pricePer1000
+        : pricePerBrick !== undefined
+        ? Math.round(pricePerBrick * 1000)
+        : undefined;
+
+    if (calculatedPricePer1000 === undefined || calculatedPricePer1000 < 0) {
+      throw new AppError('Valid price per brick or price per 1000 is required', 400);
     }
 
-    if (typeof pricePerTrolley !== 'number' || pricePerTrolley < 0) {
-      throw new AppError('Price per trolley must be a positive number', 400);
-    }
+    const calculatedPricePerTrolley =
+      pricePerTrolley !== undefined ? pricePerTrolley : calculatedPricePer1000 * 3;
 
     if (availability !== undefined && typeof availability !== 'boolean') {
       throw new AppError('Availability must be a boolean value', 400);
     }
 
     const existingProduct = await Product.findById(id)
-      .select('name pricePer1000 pricePerTrolley')
+      .select('name pricePerBrick pricePer1000 pricePerTrolley')
       .exec();
 
     if (!existingProduct) {
@@ -40,14 +45,15 @@ export const updateProductPricing = async (
     }
 
     const updated = await adminService.updateProductPricing(id, {
-      pricePer1000,
-      pricePerTrolley,
+      pricePerBrick: pricePerBrick !== undefined ? pricePerBrick : calculatedPricePer1000 / 1000,
+      pricePer1000: calculatedPricePer1000,
+      pricePerTrolley: calculatedPricePerTrolley,
       availability,
     });
 
     const isPriceChanged =
-      existingProduct.pricePer1000 !== pricePer1000 ||
-      existingProduct.pricePerTrolley !== pricePerTrolley;
+      existingProduct.pricePer1000 !== calculatedPricePer1000 ||
+      existingProduct.pricePerTrolley !== calculatedPricePerTrolley;
 
     if (isPriceChanged && updated) {
       await logActivity({
@@ -61,12 +67,14 @@ export const updateProductPricing = async (
         metadata: {
           productName: existingProduct.name,
           previous: {
+            pricePerBrick: (existingProduct as any).pricePerBrick,
             pricePer1000: existingProduct.pricePer1000,
             pricePerTrolley: existingProduct.pricePerTrolley,
           },
           next: {
-            pricePer1000,
-            pricePerTrolley,
+            pricePerBrick: (updated as any).pricePerBrick,
+            pricePer1000: updated.pricePer1000,
+            pricePerTrolley: updated.pricePerTrolley,
           },
         },
       });
@@ -88,22 +96,29 @@ export const updateInventory = async (
   next: NextFunction
 ) => {
   try {
-    const { totalBricks, availableTrolleys } = req.body || {};
+    const { totalBricks, availableTrolleys, items } = req.body || {};
 
-    // Validate inventory fields
-    if (typeof totalBricks !== 'number' || totalBricks < 0 || !Number.isInteger(totalBricks)) {
-      throw new AppError('Total bricks must be a positive whole number', 400);
-    }
+    let resolvedTotalBricks = totalBricks;
+    let resolvedAvailableTrolleys = availableTrolleys;
 
-    if (typeof availableTrolleys !== 'number' || availableTrolleys < 0 || !Number.isInteger(availableTrolleys)) {
-      throw new AppError('Available trolleys must be a positive whole number', 400);
+    if (Array.isArray(items) && items.length > 0) {
+      resolvedTotalBricks = items.reduce((sum: number, it: any) => sum + (Number(it.availableQuantity) || 0), 0);
+      resolvedAvailableTrolleys = Math.floor(resolvedTotalBricks / 3000);
+    } else {
+      if (typeof totalBricks !== 'number' || totalBricks < 0) {
+        throw new AppError('Total bricks must be a positive number', 400);
+      }
+      if (typeof availableTrolleys !== 'number' || availableTrolleys < 0) {
+        throw new AppError('Available trolleys must be a positive number', 400);
+      }
     }
 
     const previousInventory = await adminService.getLatestInventorySnapshot();
 
     const updated = await adminService.upsertInventory({
-      totalBricks,
-      availableTrolleys,
+      totalBricks: resolvedTotalBricks,
+      availableTrolleys: resolvedAvailableTrolleys,
+      items: Array.isArray(items) ? items : undefined,
     });
 
     await logActivity({
@@ -122,8 +137,8 @@ export const updateInventory = async (
             }
           : null,
         next: {
-          totalBricks,
-          availableTrolleys,
+          totalBricks: resolvedTotalBricks,
+          availableTrolleys: resolvedAvailableTrolleys,
         },
       },
     });

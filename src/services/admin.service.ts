@@ -1,29 +1,41 @@
 import Product, { ProductDocument } from '../models/Product';
-import Inventory, { InventoryDocument } from '../models/Inventory';
+import Inventory, { InventoryDocument, GradeInventoryItem } from '../models/Inventory';
 import Enquiry from '../models/Enquiry';
 import Order, { OrderDocument } from '../models/Order';
 
 export interface UpdateProductPricingInput {
+  pricePerBrick?: number;
   pricePer1000: number;
-  pricePerTrolley: number;
+  pricePerTrolley?: number;
   availability?: boolean;
 }
 
 export interface UpdateInventoryInput {
-  totalBricks: number;
-  availableTrolleys: number;
+  totalBricks?: number;
+  availableTrolleys?: number;
+  items?: GradeInventoryItem[];
 }
 
 export const updateProductPricing = async (
   productId: string,
   input: UpdateProductPricingInput
 ): Promise<ProductDocument | null> => {
+  const pricePerBrick =
+    input.pricePerBrick !== undefined
+      ? input.pricePerBrick
+      : Math.round((input.pricePer1000 / 1000) * 100) / 100;
+  const pricePerTrolley =
+    input.pricePerTrolley !== undefined ? input.pricePerTrolley : input.pricePer1000 * 3;
+
   return Product.findByIdAndUpdate(
     productId,
     {
+      pricePerBrick,
       pricePer1000: input.pricePer1000,
-      pricePerTrolley: input.pricePerTrolley,
-      ...(typeof input.availability === 'boolean' ? { availability: input.availability } : {}),
+      pricePerTrolley,
+      ...(typeof input.availability === 'boolean'
+        ? { availability: input.availability, isActive: input.availability }
+        : {}),
     },
     { new: true }
   ).exec();
@@ -32,11 +44,20 @@ export const updateProductPricing = async (
 export const upsertInventory = async (
   input: UpdateInventoryInput
 ): Promise<InventoryDocument | null> => {
+  let totalBricks = input.totalBricks;
+  let availableTrolleys = input.availableTrolleys;
+
+  if (input.items && input.items.length > 0) {
+    totalBricks = input.items.reduce((acc, curr) => acc + (curr.availableQuantity || 0), 0);
+    availableTrolleys = Math.floor(totalBricks / 3000);
+  }
+
   return Inventory.findOneAndUpdate(
     {},
     {
-      totalBricks: input.totalBricks,
-      availableTrolleys: input.availableTrolleys,
+      ...(totalBricks !== undefined ? { totalBricks } : {}),
+      ...(availableTrolleys !== undefined ? { availableTrolleys } : {}),
+      ...(input.items ? { items: input.items } : {}),
     },
     {
       new: true,
@@ -54,8 +75,19 @@ export const listEnquiries = async (limit: number = 100): Promise<any[]> => {
   return Enquiry.find().sort({ createdAt: -1 }).limit(limit).lean().exec();
 };
 
-export const listOrders = async (limit: number = 20): Promise<any[]> => {
+export const listOrders = async (limit: number = 100): Promise<any[]> => {
   return Order.find().sort({ createdAt: -1 }).limit(limit).lean().exec();
+};
+
+export const getOrderById = async (orderId: string): Promise<OrderDocument | null> => {
+  return Order.findById(orderId).exec();
+};
+
+export const updateOrderDetails = async (
+  orderId: string,
+  updateData: Partial<OrderDocument>
+): Promise<OrderDocument | null> => {
+  return Order.findByIdAndUpdate(orderId, { $set: updateData }, { new: true }).exec();
 };
 
 export const deleteProductById = async (id: string): Promise<ProductDocument | null> => {
@@ -151,6 +183,7 @@ export const getDashboardStats = async (): Promise<any> => {
     inventory: {
       totalBricks: inventory?.totalBricks || 0,
       availableTrolleys: inventory?.availableTrolleys || 0,
+      items: inventory?.items || [],
     },
   };
 };

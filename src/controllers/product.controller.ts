@@ -32,22 +32,43 @@ export const getAllProductsAdmin = async (req: Request, res: Response): Promise<
 export const getAllProductsPublic = async (_req: Request, res: Response): Promise<void> => {
   try {
     const products = await Product.find({ isActive: true, isArchived: { $ne: true } }).sort({
-      createdAt: -1,
+      displayOrder: 1,
+      createdAt: 1,
     });
 
-    // Optimize response for public (remove admin-only fields)
+    // Provide complete, clean product data for public catalog and order form
     const publicProducts = products.map((product) => ({
       _id: product._id,
+      productId: product.productId,
+      productCode: product.productCode,
       name: product.name,
+      localName: product.localName,
+      alternativeNames: product.alternativeNames || [],
       slug: product.slug,
+      grade: product.grade || 'Grade 1',
+      category: product.category,
+      badge: product.badge,
       description: product.description,
       imageUrl: product.imageUrl,
+      images: product.images || (product.imageUrl ? [product.imageUrl] : []),
       type: product.type,
+      pricePerBrick: product.pricePerBrick || (product.pricePer1000 ? Math.round((product.pricePer1000 / 1000) * 100) / 100 : 9),
       pricePer1000: product.pricePer1000,
       pricePerTrolley: product.pricePerTrolley,
-      usageTags: product.usageTags,
+      pricingUnit: product.pricingUnit || 'INR',
+      characteristics: product.characteristics || [],
+      recommendedApplications: product.recommendedApplications || [],
+      colourDescription: product.colourDescription,
+      soundDescription: product.soundDescription,
+      strengthLevel: product.strengthLevel,
+      usageTags: product.usageTags || [],
       qualityGrade: product.qualityGrade,
+      availabilityStatus: product.availabilityStatus || 'In Stock',
       availability: product.availability,
+      isActive: product.isActive,
+      isFeatured: product.isFeatured || false,
+      displayOrder: product.displayOrder || 0,
+      stockQuantity: product.stockQuantity || 0,
     }));
 
     res.status(200).json({
@@ -100,23 +121,55 @@ export const getProductById = async (req: Request, res: Response): Promise<void>
 export const createProduct = async (req: Request, res: Response): Promise<void> => {
   try {
     const {
+      productId,
+      productCode,
       name,
+      localName,
+      alternativeNames,
       slug,
+      grade,
+      category,
+      badge,
       description,
       type,
+      pricePerBrick,
       pricePer1000,
       pricePerTrolley,
+      characteristics,
+      recommendedApplications,
+      colourDescription,
+      soundDescription,
+      strengthLevel,
       usageTags,
       qualityGrade,
       isActive,
+      isFeatured,
+      displayOrder,
+      stockQuantity,
+      availabilityStatus,
       imageData,
     } = req.body;
 
+    const resolvedPricePer1000 =
+      pricePer1000 !== undefined
+        ? Number(pricePer1000)
+        : pricePerBrick !== undefined
+        ? Math.round(Number(pricePerBrick) * 1000)
+        : 9000;
+
+    const resolvedPricePerBrick =
+      pricePerBrick !== undefined
+        ? Number(pricePerBrick)
+        : Math.round((resolvedPricePer1000 / 1000) * 100) / 100;
+
+    const resolvedPricePerTrolley =
+      pricePerTrolley !== undefined ? Number(pricePerTrolley) : resolvedPricePer1000 * 3;
+
     // Validate required fields
-    if (!name || !type || !pricePer1000 || !pricePerTrolley || !qualityGrade) {
+    if (!name) {
       res.status(400).json({
         success: false,
-        message: 'Please provide all required fields',
+        message: 'Product name is required',
       });
       return;
     }
@@ -154,18 +207,36 @@ export const createProduct = async (req: Request, res: Response): Promise<void> 
 
     // Create product
     const product = await Product.create({
+      productId: productId || undefined,
+      productCode: productCode || undefined,
       name,
+      localName,
+      alternativeNames: alternativeNames || [],
       slug,
+      grade: grade || 'Grade 1',
+      category: category || 'Standard Quality',
+      badge: badge || '',
       description,
       imageUrl,
       imagePublicId,
-      type,
-      pricePer1000,
-      pricePerTrolley,
+      images: imageUrl ? [imageUrl] : [],
+      type: type || 'Class 105 Structural Masonry',
+      pricePerBrick: resolvedPricePerBrick,
+      pricePer1000: resolvedPricePer1000,
+      pricePerTrolley: resolvedPricePerTrolley,
+      characteristics: characteristics || [],
+      recommendedApplications: recommendedApplications || [],
+      colourDescription: colourDescription || '',
+      soundDescription: soundDescription || '',
+      strengthLevel: strengthLevel || '',
       usageTags: usageTags || [],
-      qualityGrade,
+      qualityGrade: qualityGrade || 'First',
       isActive: isActive !== undefined ? isActive : true,
       availability: isActive !== undefined ? isActive : true,
+      isFeatured: Boolean(isFeatured),
+      displayOrder: displayOrder !== undefined ? Number(displayOrder) : 0,
+      stockQuantity: stockQuantity !== undefined ? Number(stockQuantity) : 0,
+      availabilityStatus: availabilityStatus || 'In Stock',
       isArchived: false,
     });
 
@@ -190,15 +261,32 @@ export const updateProduct = async (req: Request, res: Response): Promise<void> 
   try {
     const { id } = req.params;
     const {
+      productId,
+      productCode,
       name,
+      localName,
+      alternativeNames,
       slug,
+      grade,
+      category,
+      badge,
       description,
       type,
+      pricePerBrick,
       pricePer1000,
       pricePerTrolley,
+      characteristics,
+      recommendedApplications,
+      colourDescription,
+      soundDescription,
+      strengthLevel,
       usageTags,
       qualityGrade,
       isActive,
+      isFeatured,
+      displayOrder,
+      stockQuantity,
+      availabilityStatus,
       imageData,
       removeImage,
     } = req.body;
@@ -221,6 +309,7 @@ export const updateProduct = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
+    const previousPricePerBrick = (product as any).pricePerBrick;
     const previousPricePer1000 = product.pricePer1000;
     const previousPricePerTrolley = product.pricePerTrolley;
 
@@ -274,23 +363,60 @@ export const updateProduct = async (req: Request, res: Response): Promise<void> 
     }
 
     // Update fields
+    if (productId !== undefined) (product as any).productId = productId;
+    if (productCode !== undefined) (product as any).productCode = productCode;
     if (name !== undefined) product.name = name;
+    if (localName !== undefined) (product as any).localName = localName;
+    if (alternativeNames !== undefined) (product as any).alternativeNames = alternativeNames;
     if (slug !== undefined) product.slug = slug;
+    if (grade !== undefined) (product as any).grade = grade;
+    if (category !== undefined) (product as any).category = category;
+    if (badge !== undefined) (product as any).badge = badge;
     if (description !== undefined) product.description = description;
     if (type !== undefined) product.type = type;
-    if (pricePer1000 !== undefined) product.pricePer1000 = pricePer1000;
-    if (pricePerTrolley !== undefined) product.pricePerTrolley = pricePerTrolley;
+
+    if (pricePerBrick !== undefined) {
+      (product as any).pricePerBrick = Number(pricePerBrick);
+      if (pricePer1000 === undefined) {
+        product.pricePer1000 = Math.round(Number(pricePerBrick) * 1000);
+      }
+    }
+
+    if (pricePer1000 !== undefined) {
+      product.pricePer1000 = Number(pricePer1000);
+      if (pricePerBrick === undefined) {
+        (product as any).pricePerBrick = Math.round((Number(pricePer1000) / 1000) * 100) / 100;
+      }
+    }
+
+    if (pricePerTrolley !== undefined) {
+      product.pricePerTrolley = Number(pricePerTrolley);
+    } else if (pricePer1000 !== undefined) {
+      product.pricePerTrolley = product.pricePer1000 * 3;
+    }
+
+    if (characteristics !== undefined) (product as any).characteristics = characteristics;
+    if (recommendedApplications !== undefined) (product as any).recommendedApplications = recommendedApplications;
+    if (colourDescription !== undefined) (product as any).colourDescription = colourDescription;
+    if (soundDescription !== undefined) (product as any).soundDescription = soundDescription;
+    if (strengthLevel !== undefined) (product as any).strengthLevel = strengthLevel;
     if (usageTags !== undefined) product.usageTags = usageTags;
     if (qualityGrade !== undefined) product.qualityGrade = qualityGrade;
     if (isActive !== undefined) {
       product.isActive = isActive;
       product.availability = isActive;
     }
+    if (isFeatured !== undefined) (product as any).isFeatured = Boolean(isFeatured);
+    if (displayOrder !== undefined) (product as any).displayOrder = Number(displayOrder);
+    if (stockQuantity !== undefined) (product as any).stockQuantity = Number(stockQuantity);
+    if (availabilityStatus !== undefined) (product as any).availabilityStatus = availabilityStatus;
 
     await product.save();
 
     const isPriceChanged =
       previousPricePer1000 !== product.pricePer1000 ||
+      previousPricePerTrolley !== product.pricePerTrolley ||
+      previousPricePerBrick !== (product as any).pricePerBrick;
       previousPricePerTrolley !== product.pricePerTrolley;
 
     if (isPriceChanged) {

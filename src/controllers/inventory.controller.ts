@@ -14,6 +14,7 @@ export const fetchLiveInventory = async (
       data: {
         totalBricks: inventory.totalBricks,
         availableTrolleys: inventory.availableTrolleys,
+        items: inventory.items || [],
         updatedAt: inventory.updatedAt || inventory.createdAt,
       },
     });
